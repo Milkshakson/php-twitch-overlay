@@ -475,3 +475,4 @@ composer.lock
 
 ##### ENV Files
 *.env
+*.ini
