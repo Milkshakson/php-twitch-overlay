@@ -37,7 +37,6 @@ class ViewersController
                 $session = new Session();
                 $storedTokenTwitch = $session->get('tokenTwitch');
                 $twitch->auth($storedTokenTwitch);
-                $session->set('tokenTwitch', $twitch->getToken(true));
                 $classRow = "col-lg-12 col-md-12";
                 $classCard = "col-lg-1 col-md-1";
                 $imgSize = " width='120px'";
