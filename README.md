@@ -1,0 +1,1 @@
+Uma aplicação para consumir a API da TWITCH e auxiliar os streamers
