@@ -30,15 +30,3 @@ function pre($var, $exit = false)
     if ($exit)
         exit;
 }
-
-function isBot($viewer = '')
-{
-    $bots = [
-        'nightbot', 'timeoutwithbits', 'streamlabs',
-        'streamholics', 'streamelements', 'soundalerts',
-        'bingcortana',
-        'own3d', 'kaxips06',
-        'blgdamjudge'
-    ];
-    return in_array($viewer, $bots);
-}

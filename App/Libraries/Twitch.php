@@ -15,6 +15,13 @@ class Twitch
     protected $clientId = null;
     protected $clientSecret = null;
     protected $authUrl = 'https://id.twitch.tv/oauth2/token';
+    protected $botList = [
+        'nightbot', 'timeoutwithbits', 'streamlabs',
+        'streamholics', 'streamelements', 'soundalerts',
+        'bingcortana',
+        'own3d', 'kaxips06',
+        'blgdamjudge'
+    ];
 
     public function __construct($params = [])
     {
@@ -91,5 +98,28 @@ class Twitch
         } catch (Exception $e) {
             return false;
         }
+    }
+
+    public function getChatters($streamer = '', $noBots = true)
+    {
+        $url = "https://tmi.twitch.tv/group/user/$streamer/chatters";
+        $users = file_get_contents($url);
+        $users = json_decode($users);
+        $chatters = $users->chatters;
+        $viewers = [];
+        foreach ($chatters->viewers as $chatter) {
+            if (!$noBots || !$this->isBot($chatter))
+                $viewers[] = ['nome' => $chatter, 'tipo' => 'viewers'];
+        }
+        foreach ($chatters->moderators as $chatter) {
+            if (!$noBots || !$this->isBot($chatter))
+                $viewers[] = ['nome' => $chatter, 'tipo' => 'moderators'];
+        }
+        return $viewers;
+    }
+
+    private function isBot($viewer = '')
+    {
+        return in_array($viewer, $this->botList);
     }
 }

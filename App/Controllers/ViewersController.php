@@ -24,30 +24,17 @@ class ViewersController
             exit("<h1 class='text-center text-danger'>Streamer não consta na lista de autorizados.</h1>");
         }
         $layout = empty($_GET['layout']) ? 'h' : $_GET['layout'];
-        $url = "https://tmi.twitch.tv/group/user/$streamer/chatters";
-        $users = file_get_contents($url);
-        $users = json_decode($users);
-        $chatters = $users->chatters;
-        $chattersCount = $users->chatter_count;
-        $viewers = [];
-        foreach ($chatters->viewers as $chatter) {
-            if (!isBot($chatter))
-                $viewers[] = ['nome' => $chatter, 'tipo' => 'viewers'];
-        }
-        foreach ($chatters->moderators as $chatter) {
-            if (!isBot($chatter))
-                $viewers[] = ['nome' => $chatter, 'tipo' => 'moderators'];
-        }
+        $env = new Dotenv();
+        $twitch = new Twitch([
+            'clientId' => $env->get('clientIdTwitch'),
+            'clientSecret' => $env->get('clientSecretTwitch')
+        ]);
+        $viewers = $twitch->getChatters($streamer);
 ?>
 <div class='transparencia container-main'>
     <?php
-            $session = new Session();
-            $env = new Dotenv();
-            $twitch = new Twitch([
-                'clientId' => $env->get('clientIdTwitch'),
-                'clientSecret' => $env->get('clientSecretTwitch')
-            ]);
             try {
+                $session = new Session();
                 $storedTokenTwitch = $session->get('tokenTwitch');
                 $twitch->auth($storedTokenTwitch);
                 $session->set('tokenTwitch', $twitch->getToken(true));

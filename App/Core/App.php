@@ -1,8 +1,10 @@
 <?php
 
+use App\Config\Helpers;
 use App\Libraries\Dotenv;
 
 require_once ROOTDIR . 'autoload.php';
-include_once(ROOTDIR . 'App/Helpers/CommonHelper.php');
 $env = new Dotenv();
+$helpers = new Helpers();
+$helpers->loadDefaults();
 defined('ENVIRONMENT') or define('ENVIRONMENT', $env->get('environment') ? $env->get('environment') : 'development');
