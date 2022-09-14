@@ -20,10 +20,16 @@ class SubsController
             'clientSecret' => $env->get('clientSecretTwitch'),
             'authorizedCode' => $code
         ]);
-        // $twitch->getCredentials();
-        // $twitch->auth();
+        // $twitch->getClientCredentials();
+        // $twitch->getAuthorizationCode();
         // $twitch->auth($storedTokenTwitch);
         $subs = $twitch->getSubs();
-        pre($subs, 1);
+        if (property_exists($subs, 'data')) {
+            $lista = $subs->data;
+            foreach ($lista as $sub) {
+                echo "<h2>$sub->user_name</h2>";
+            }
+        } else
+            pre($subs, 1);
     }
 }

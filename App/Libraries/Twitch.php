@@ -8,7 +8,8 @@ use App\Libraries\Curl;
 
 class Twitch
 {
-    protected $stringToken = 'w9l7ogivi2lpuvcr22dkxkf52u376e'; // '21hjoxipurkwsqisifut7f4edvinltux66n4kcx5sk6wni3i08';
+    protected $accessToken = ''; // '21hjoxipurkwsqisifut7f4edvinltux66n4kcx5sk6wni3i08';
+    protected $refreshToken = '';
 
     // [access_token] => w9l7ogivi2lpuvcr22dkxkf52u376e
     // [refresh_token] => juyiz40ekd60scvyp7o46i3rn1qd1mq3w4zzaiq8rdl0s94ucy
@@ -18,7 +19,6 @@ class Twitch
     protected $statusCode = 0;
     protected $clientId = null;
     protected $clientSecret = null;
-    protected $userId = '';
     protected $redirectUri = '';
     protected $authorizedCode = '';
     protected $authUrl = 'https://id.twitch.tv/oauth2/token';
@@ -30,6 +30,10 @@ class Twitch
         'blgdamjudge'
     ];
 
+    protected $translatedmessages = [
+        'invalid access token' => 'Token de acesso inválido',
+        'Invalid authorization code' => 'Código de autorização inválido.'
+    ];
     public function __construct($params = [])
     {
         extract($params);
@@ -40,16 +44,9 @@ class Twitch
         $this->redirectUri = ENVIRONMENT == 'production' ? '' : 'http://localhost:8000/gettwitch.php';
         $this->curl = new Curl();
     }
-    public function getCredentials($params = [])
+    private function getClientCredentials()
     {
-        $storedTokenTwitch = '';
-        extract($params);
-
         try {
-            if (empty($storedTokenTwitch) || !$this->isValidToken(json_encode($storedTokenTwitch))) {
-                throw new Exception('Invalid stored token');
-            }
-        } catch (Exception $e) {
             $data = array(
                 'client_id' => $this->clientId,
                 'client_secret' => $this->clientSecret,
@@ -62,21 +59,53 @@ class Twitch
                 "status_code" => $this->curl->getHttpStatus(),
                 "content" => $this->curl->__tostring()
             ];
-            try {
-                $content = json_decode($curlToken['content']);
-                $this->stringToken = $content->access_token;
-                $validate = $this->validateStringToken($content->access_token);
-                $now = new DateTime();
-                $expira = clone $now;
-                $expira->modify("+ $validate->expires_in seconds");
-                $content->exp = $expira;
-                return $content;
-            } catch (Exception $e) {
-                return false;
-            }
+            $content = json_decode($curlToken['content']);
+            $this->accessToken = $content->access_token;
+            $validate = $this->validateStringToken($content->access_token);
+            $now = new DateTime();
+            $expira = clone $now;
+            $expira->modify("+ $validate->expires_in seconds");
+            $content->exp = $expira;
+            return $content;
+        } catch (Exception $e) {
+            return false;
         }
     }
-    public function getRrefreshedToken($refreshToken)
+    public function getAuthorizationCode()
+    {
+        try {
+            $data = array(
+                'client_id' => $this->clientId,
+                'client_secret' => $this->clientSecret,
+                'code' => $this->authorizedCode,
+                'grant_type' => 'authorization_code',
+                'redirect_uri' => $this->redirectUri
+            );
+            $this->curl->setRequestType('POST');
+            $this->curl->setPost($data);
+            $this->curl->createCurl($this->authUrl);
+            $curlToken = [
+                "status_code" => $this->curl->getHttpStatus(),
+                "content" => $this->curl->__tostring()
+            ];
+            $content = json_decode($curlToken['content']);
+            $validate = $this->validateStringToken($content->access_token);
+            $refreshed = $this->getRrefreshedToken($content->refresh_token);
+            $this->accessToken = $content->access_token;
+            $this->refreshToken = $refreshed->refresh_token;
+            $now = new DateTime();
+            $expira = clone $now;
+            $expira->modify("+ $validate->expires_in seconds");
+            $content->login = $validate->login;
+            $content->exp = $expira;
+            $content->userId = $validate->user_id;
+            return $content;
+        } catch (Exception $e) {
+            return false;
+        }
+    }
+
+    private function getRrefreshedToken($refreshToken)
     {
         try {
             $data = array(
@@ -98,75 +127,48 @@ class Twitch
             return false;
         }
     }
-    public function auth()
-    {
-        try {
-            $data = array(
-                'client_id' => $this->clientId,
-                'client_secret' => $this->clientSecret,
-                'code' => $this->authorizedCode,
-                'grant_type' => 'authorization_code',
-                'redirect_uri' => $this->redirectUri
-            );
-            $this->curl->setRequestType('POST');
-            $this->curl->setPost($data);
-            $this->curl->createCurl($this->authUrl);
-            $curlToken = [
-                "status_code" => $this->curl->getHttpStatus(),
-                "content" => $this->curl->__tostring()
-            ];
-            $content = json_decode($curlToken['content']);
-            pre($content);
-            $this->stringToken = $content->access_token;
-            $validate = $this->validateStringToken($this->stringToken);
-            $refreshed = $this->getRrefreshedToken($content->refresh_token);
-            pre($refreshed, 1);
-            $now = new DateTime();
-            $expira = clone $now;
-            $expira->modify("+ $validate->expires_in seconds");
-            $content->login = $validate->login;
-            $content->exp = $expira;
-            return $content;
-        } catch (Exception $e) {
-            return false;
-        }
-    }
-
     private function validateStringToken(String $token = null)
     {
         try {
             $return = $this->fetch('https://id.twitch.tv/oauth2/validate', 'get', [], ["Authorization: OAuth $token"]);
-            pre($return, 1);
-            if (property_exists($return, 'user_id'))
-                $this->userId = $return->user_id;
             return $return;
         } catch (Exception $e) {
             return false;
         }
     }
-    public function isValidToken($token)
-    {
-        $now = new DateTime();
-        if ($token) {
-            $expira = $token->exp;
-            return $now < $expira;
-        } else {
-            return false;
-        }
-
-        return false;
-    }
 
     public function getSubs()
     {
-        $this->validateStringToken($this->stringToken);
-        // $scope = urlencode('channel:read:subscriptions channel_subscriptions');
-        // $uri_return = urlencode('http://localhost:8000/gettwitch.php');
-        // $urlAuth = "https://id.twitch.tv/oauth2/authorize?response_type=code&client_id=$this->clientId&redirect_uri=$uri_return&scope=$scope";
+        $scope = urlencode('channel:read:subscriptions channel_subscriptions');
+        $uri_return = urlencode('http://localhost:8000/gettwitch.php');
+        $urlAuth = "https://id.twitch.tv/oauth2/authorize?response_type=code&client_id=$this->clientId&redirect_uri=$uri_return&scope=$scope";
+        echo ("<a href='$urlAuth' target='_blank'>$urlAuth</a>");
+        //tenho um token? Então valido
+        $session = new Session();
+        $auth = $session->get('validAuth');
+        // $auth = null;
+        if (!$auth) {
+            pre('No Auth');
+            $auth = $this->getAuthorizationCode();
+            $session->set('validAuth', $auth);
+        } else {
+            pre('With Auth');
+        }
+        pre('$auth:');
+        pre($auth);
+        $broadcasterId = $auth->userId;
+        pre("broadcasterId: $broadcasterId");
         $return = $this->fetch('https://api.twitch.tv/helix/subscriptions', 'get', [
-            'broadcaster_id' => $this->userId,
+            'broadcaster_id' => $broadcasterId,
             'scope' => 'channel:read:subscriptions channel_subscriptions',
-        ], ["Authorization: Bearer $this->stringToken", "Client-ID: $this->clientId"]);
+        ], ["Authorization: Bearer $auth->access_token", "Client-ID: $this->clientId"]);
+
+        $refreshed = $this->getRrefreshedToken($auth->refresh_token);
+        $auth->access_token = $refreshed->access_token;
+        $auth->refresh_token = $refreshed->refresh_token;
+        $session->set('validAuth', $auth);
+        $this->accessToken = $refreshed->access_token;
+        $this->refreshToken = $refreshed->refresh_token;
         return $return;
     }
     public function fetch($url = '', $method = null, $data = [], $headers = [])
@@ -187,11 +189,14 @@ class Twitch
             } else {
                 $this->curl->setPost($data);
             }
+            if (str_starts_with($url, 'https://api.twitch.tv/helix/subscriptions')) {
+                pre($url);
+            }
             $this->curl->createCurl($url);
             $this->statusCode = $this->curl->getHttpStatus();
             return json_decode($this->curl->__tostring());
         } catch (Exception $e) {
-            return false;
+            return $e;
         }
     }
 
@@ -216,5 +221,10 @@ class Twitch
     private function isBot($viewer = '')
     {
         return in_array($viewer, $this->botList);
+    }
+
+    private function translateMessage($message = null)
+    {
+        return key_exists($message, $this->translatedmessages) ? $this->translatedmessages[$message] : $message;
     }
 }
