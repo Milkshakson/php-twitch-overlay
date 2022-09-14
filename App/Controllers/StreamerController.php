@@ -2,14 +2,28 @@
 
 namespace App\Controllers;
 
-use App\Libraries\{Dotenv, Request, Session, Twitch};
+use App\Libraries\Dotenv;
+use App\Libraries\Request;
+use App\Libraries\Session;
+use App\Libraries\Twitch;
+use App\Models\StreamerModel;
 use Exception;
 
-class ViewersController
+class StreamerController
 {
-    public function index()
+    public function subList()
     {
-
+        $streamerModel = new StreamerModel();
+        $streamer = $streamerModel->findByName('milkshakson');
+        $lista = $streamerModel->getSubList($streamer);
+        $html = '<h2>Lista de inscritos do canal</h2>';
+        foreach ($lista as $sub) {
+            $html .= "<div>$sub->user_name</div>";
+        }
+        return $html;
+    }
+    public function viewersList()
+    {
         require_once('./App/views/includes/header.php');
         $request = new Request();
         $streamer = $request->find('streamer');
@@ -36,7 +50,7 @@ class ViewersController
             try {
                 $session = new Session();
                 $storedTokenTwitch = $session->get('tokenTwitch');
-                $twitch->auth($storedTokenTwitch);
+                $twitch->getClientCredentials();
                 $classRow = "col-lg-12 col-md-12";
                 $classCard = "col-lg-1 col-md-1";
                 $imgSize = " width='120px'";
@@ -81,5 +95,38 @@ class ViewersController
 </div>
 <?php require_once('./App/views/includes/footer.php');
         reload(60000);
+    }
+
+    public function authorize()
+    {
+        $scope = urlencode('channel:read:subscriptions channel_subscriptions');
+        $twitch = new Twitch();
+        $uri_return = urlencode($twitch->getRedirectUri());
+        $env = new Dotenv();
+        $clientId = $env->get('clientIdTwitch');
+        $urlAuth = "https://id.twitch.tv/oauth2/authorize?response_type=code&client_id=$clientId&redirect_uri=$uri_return&scope=$scope";
+        return ("<a href='$urlAuth' target='_blank'>$urlAuth</a>");
+    }
+
+    public function authorizeComplete()
+    {
+        include 'autoload.php';
+        $env = new Dotenv();
+        $session = new Session();
+        if (key_exists('code', $_GET)) {
+            $twitch = new Twitch([
+                'clientId' => $env->get('clientIdTwitch'),
+                'clientSecret' => $env->get('clientSecretTwitch'),
+            ]);
+            $code = $_GET['code'];
+            $credentials = $twitch->getAuthorizationCode($code);
+            if ($credentials && property_exists($credentials, 'userId')) {
+                $session->set('validAuth', $credentials);
+                return '<h2>Credenciais salvas com sucesso.</h2>';
+            } else {
+                $session->set('validAuth', null);
+                return '<h2>Falha ao salvar as credenciais.</h2>';
+            }
+        }
     }
 }

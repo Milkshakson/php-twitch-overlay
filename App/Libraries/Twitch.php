@@ -8,19 +8,12 @@ use App\Libraries\Curl;
 
 class Twitch
 {
-    protected $accessToken = ''; // '21hjoxipurkwsqisifut7f4edvinltux66n4kcx5sk6wni3i08';
-    protected $refreshToken = '';
-
-    // [access_token] => w9l7ogivi2lpuvcr22dkxkf52u376e
-    // [refresh_token] => juyiz40ekd60scvyp7o46i3rn1qd1mq3w4zzaiq8rdl0s94ucy
-
     protected $headers = [];
     protected $curl = null;
     protected $statusCode = 0;
     protected $clientId = null;
     protected $clientSecret = null;
     protected $redirectUri = '';
-    protected $authorizedCode = '';
     protected $authUrl = 'https://id.twitch.tv/oauth2/token';
     protected $botList = [
         'nightbot', 'timeoutwithbits', 'streamlabs',
@@ -39,12 +32,11 @@ class Twitch
         extract($params);
         if (isset($clientId)) $this->clientId = $clientId;
         if (isset($clientSecret)) $this->clientSecret = $clientSecret;
-        if (isset($authorizedCode)) $this->authorizedCode = $authorizedCode;
 
-        $this->redirectUri = ENVIRONMENT == 'production' ? '' : 'http://localhost:8000/gettwitch.php';
+        $this->redirectUri = ENVIRONMENT == 'production' ? '' : 'http://localhost:8000/twitch/authorize-complete';
         $this->curl = new Curl();
     }
-    private function getClientCredentials()
+    public function getClientCredentials()
     {
         try {
             $data = array(
@@ -60,7 +52,6 @@ class Twitch
                 "content" => $this->curl->__tostring()
             ];
             $content = json_decode($curlToken['content']);
-            $this->accessToken = $content->access_token;
             $validate = $this->validateStringToken($content->access_token);
             $now = new DateTime();
             $expira = clone $now;
@@ -71,13 +62,13 @@ class Twitch
             return false;
         }
     }
-    public function getAuthorizationCode()
+    public function getAuthorizationCode($authorizedCode)
     {
         try {
             $data = array(
                 'client_id' => $this->clientId,
                 'client_secret' => $this->clientSecret,
-                'code' => $this->authorizedCode,
+                'code' => $authorizedCode,
                 'grant_type' => 'authorization_code',
                 'redirect_uri' => $this->redirectUri
             );
@@ -91,7 +82,6 @@ class Twitch
             $content = json_decode($curlToken['content']);
             $validate = $this->validateStringToken($content->access_token);
             $refreshed = $this->getRrefreshedToken($content->refresh_token);
-            $this->accessToken = $content->access_token;
             $this->refreshToken = $refreshed->refresh_token;
             $now = new DateTime();
             $expira = clone $now;
@@ -137,38 +127,24 @@ class Twitch
         }
     }
 
-    public function getSubs()
+    public function getSubList($credentials)
     {
-        $scope = urlencode('channel:read:subscriptions channel_subscriptions');
-        $uri_return = urlencode('http://localhost:8000/gettwitch.php');
-        $urlAuth = "https://id.twitch.tv/oauth2/authorize?response_type=code&client_id=$this->clientId&redirect_uri=$uri_return&scope=$scope";
-        echo ("<a href='$urlAuth' target='_blank'>$urlAuth</a>");
-        //tenho um token? Então valido
-        $session = new Session();
-        $auth = $session->get('validAuth');
-        // $auth = null;
-        if (!$auth) {
-            pre('No Auth');
-            $auth = $this->getAuthorizationCode();
-            $session->set('validAuth', $auth);
-        } else {
-            pre('With Auth');
-        }
-        pre('$auth:');
-        pre($auth);
-        $broadcasterId = $auth->userId;
-        pre("broadcasterId: $broadcasterId");
+        /**
+         * $credentials must be a object returned by TWITCH API with attributes:
+         * user_id
+         * refresh_token
+         * access_token
+         * expires_in
+         */
+        $broadcasterId = $credentials->userId;
         $return = $this->fetch('https://api.twitch.tv/helix/subscriptions', 'get', [
             'broadcaster_id' => $broadcasterId,
             'scope' => 'channel:read:subscriptions channel_subscriptions',
-        ], ["Authorization: Bearer $auth->access_token", "Client-ID: $this->clientId"]);
-
-        $refreshed = $this->getRrefreshedToken($auth->refresh_token);
-        $auth->access_token = $refreshed->access_token;
-        $auth->refresh_token = $refreshed->refresh_token;
-        $session->set('validAuth', $auth);
-        $this->accessToken = $refreshed->access_token;
-        $this->refreshToken = $refreshed->refresh_token;
+        ], ["Authorization: Bearer $credentials->access_token", "Client-ID: $this->clientId"]);
+        $refreshed = $this->getRrefreshedToken($credentials->refresh_token);
+        $credentials->access_token = $refreshed->access_token;
+        $credentials->refresh_token = $refreshed->refresh_token;
+        $return->refreshedCredential = $credentials;
         return $return;
     }
     public function fetch($url = '', $method = null, $data = [], $headers = [])
@@ -176,9 +152,6 @@ class Twitch
         $this->statusCode = 0;
         try {
             $headers = $this->headers + $headers;
-            if (str_starts_with($url, 'https://api.twitch.tv/helix/subscriptions')) {
-                pre($headers);
-            }
             $this->curl->setHeader($headers);
             $this->curl->setRequestType(strtoupper($method));
             if (strtolower($method) == 'get' && count($data)) {
@@ -188,9 +161,6 @@ class Twitch
                 }
             } else {
                 $this->curl->setPost($data);
-            }
-            if (str_starts_with($url, 'https://api.twitch.tv/helix/subscriptions')) {
-                pre($url);
             }
             $this->curl->createCurl($url);
             $this->statusCode = $this->curl->getHttpStatus();
@@ -226,5 +196,33 @@ class Twitch
     private function translateMessage($message = null)
     {
         return key_exists($message, $this->translatedmessages) ? $this->translatedmessages[$message] : $message;
+    }
+
+    /**
+     * Get the value of clientId
+     */
+    public function getClientId()
+    {
+        return $this->clientId;
+    }
+
+    /**
+     * Set the value of clientId
+     *
+     * @return  self
+     */
+    public function setClientId($clientId)
+    {
+        $this->clientId = $clientId;
+
+        return $this;
+    }
+
+    /**
+     * Get the value of redirectUri
+     */
+    public function getRedirectUri()
+    {
+        return $this->redirectUri;
     }
 }
