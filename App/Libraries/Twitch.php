@@ -25,7 +25,8 @@ class Twitch
 
     protected $translatedmessages = [
         'invalid access token' => 'Token de acesso inválido',
-        'Invalid authorization code' => 'Código de autorização inválido.'
+        'Invalid authorization code' => 'Código de autorização inválido.',
+        'OAuth token is missing' => 'Token de autenticação não enviado'
     ];
     public function __construct($params = [])
     {
@@ -147,6 +148,38 @@ class Twitch
         $return->refreshedCredential = $credentials;
         return $return;
     }
+
+    public function getUserInfo($userLogin)
+    {
+        $credentials = $this->getClientCredentials();
+        $url = "https://api.twitch.tv/helix/users?login=$userLogin";
+        $info = $this->fetch(
+            $url,
+            'get',
+            [],
+            ["Authorization: Bearer $credentials->access_token", "Client-ID: $this->clientId"]
+        );
+        if ($info && property_exists($info, 'data'))
+            return $info->data[0];
+        return null;
+    }
+
+    public function getUsersInfo($users)
+    {
+        $credentials = $this->getClientCredentials();
+        $nomes = 'login=' . (implode('&login=', $users));
+        $url = "https://api.twitch.tv/helix/users?$nomes";
+        $info = $this->fetch(
+            $url,
+            'get',
+            [],
+            ["Authorization: Bearer $credentials->access_token", "Client-ID: $this->clientId"]
+        );
+        if ($info && property_exists($info, 'data'))
+            return $info->data;
+        return [];
+    }
+
     public function fetch($url = '', $method = null, $data = [], $headers = [])
     {
         $this->statusCode = 0;
@@ -164,6 +197,7 @@ class Twitch
             }
             $this->curl->createCurl($url);
             $this->statusCode = $this->curl->getHttpStatus();
+            $data = json_decode($this->curl->__tostring());
             return json_decode($this->curl->__tostring());
         } catch (Exception $e) {
             return $e;

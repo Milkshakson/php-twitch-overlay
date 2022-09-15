@@ -1,5 +1,5 @@
 <?php
-function reload($timer = null)
+function reload($timer = null, $echo = true)
 {
     if (is_null($timer)) {
         $timer = 50;
@@ -7,7 +7,7 @@ function reload($timer = null)
         $timer = rand(500, 5000);
     }
 
-    echo "<script >
+    $return =  "<script >
     var timer = $timer;
     try_reload();
     function try_reload(){
@@ -21,6 +21,11 @@ function reload($timer = null)
         }
     }
     </script>";
+    if ($echo)
+        echo $return;
+    else
+        return
+            $return;
 }
 function pre($var, $exit = false)
 {

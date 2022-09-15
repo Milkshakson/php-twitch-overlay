@@ -23,7 +23,7 @@ $app->group('/streamer', function (\Slim\Routing\RouteCollectorProxy $app) {
         $response->getBody()->write($streamerController->subList());
         return $response;
     });
-    $app->get('/viwers-list', function (Request $request, Response $response, $args) {
+    $app->get('/viewers-list', function (Request $request, Response $response, $args) {
         $streamerController = new StreamerController();
         $response->getBody()->write($streamerController->viewersList());
         return $response;

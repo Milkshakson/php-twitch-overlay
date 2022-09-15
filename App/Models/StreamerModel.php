@@ -16,8 +16,17 @@ class StreamerModel extends Model
     }
     public function findByName($name)
     {
-        $streamer = new Streamer();
         $session = new Session();
+
+        //retorna a lista de subs do Streamer
+        $env = new Dotenv();
+        $twitch = new Twitch([
+            'clientId' => $env->get('clientIdTwitch'),
+            'clientSecret' => $env->get('clientSecretTwitch'),
+        ]);
+        //pre($session->get('validAuth'));
+        $info = $twitch->getUserInfo($name);
+        $streamer = new Streamer();
         $credentials = $session->get('validAuth');
         $streamer->setCredentials($credentials);
         return $streamer;
@@ -45,9 +54,12 @@ class StreamerModel extends Model
             $session = new Session();
             $session->set('validAuth', $subList->refreshedCredential);
         }
+        $newArray = [];
         if (property_exists($subList, 'data')) {
-            return $subList->data;
-        } else
-            return [];
+            foreach ($subList->data as $sub) {
+                $newArray[$sub->user_name] = $sub;
+            }
+        }
+        return $newArray;
     }
 }
