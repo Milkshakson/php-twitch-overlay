@@ -2,6 +2,7 @@
 
 namespace App\Controllers;
 
+use App\Entities\Streamer;
 use App\Libraries\Dotenv;
 use App\Libraries\Request;
 use App\Libraries\Session;
@@ -43,7 +44,9 @@ class StreamerController
             exit("<h1 class='text-center text-danger'>Streamer $streamerName não consta na lista de autorizados.</h1>");
         }
         $streamer = $streamerModel->findByName($streamerName);
-        pre($streamer, 1);
+        if (!$streamer) {
+            exit("<h1 class='text-center text-danger'>As credenciais para o streamer não estão corretas.</h1>");
+        }
         $subList = $streamerModel->getSubList($streamer);
         $layout = empty($_GET['layout']) ? 'h' : $_GET['layout'];
         $env = new Dotenv();
@@ -51,7 +54,7 @@ class StreamerController
             'clientId' => $env->get('clientIdTwitch'),
             'clientSecret' => $env->get('clientSecretTwitch')
         ]);
-        $viewers = $twitch->getChatters($streamer);
+        $viewers = $twitch->getChatters($streamerName);
 ?>
 <?php
         $html .= "<div class='transparencia container-main'>";
@@ -136,12 +139,14 @@ class StreamerController
             ]);
             $code = $_GET['code'];
             $credentials = $twitch->getAuthorizationCode($code);
-            pre($credentials);
             if ($credentials && property_exists($credentials, 'userId')) {
-                $session->set('validAuth', $credentials);
-                return '<h2>Credenciais salvas com sucesso.</h2>';
+                $streamerModel = new StreamerModel();
+                if ($streamerModel->saveAuthorization($credentials)) {
+                    return '<h2>Credenciais salvas com sucesso.</h2>';
+                } else {
+                    return '<h2>Falha ao salvar as credenciais.</h2>';
+                }
             } else {
-                $session->set('validAuth', null);
                 return '<h2>Falha ao salvar as credenciais.</h2>';
             }
         }

@@ -204,9 +204,9 @@ class Twitch
         }
     }
 
-    public function getChatters($streamer = '', $noBots = true)
+    public function getChatters($streamerName = '', $noBots = true)
     {
-        $url = "https://tmi.twitch.tv/group/user/$streamer/chatters";
+        $url = "https://tmi.twitch.tv/group/user/$streamerName/chatters";
         $users = file_get_contents($url);
         $users = json_decode($users);
         $chatters = $users->chatters;
