@@ -1,0 +1,19 @@
+{% extends 'Base/template.twig' %}
+{% block css %}
+	{{parent()}}
+	<link rel="stylesheet" href="assets\css\home.css">
+{% endblock %}
+{% block content %}
+	<div class="p-2 d-flex vh-100 justify-content-center align-items-center text-light">
+		<div class='d-flex flex-column'>
+			<input name='streamer' placeholder='Informe aqui o nome do streamer'/>
+			<a class='btn' href='streamer/viewers-list' data-streamer-name=''>Viewers List</a>
+			<a class='btn' href='streamer/sub-list' data-streamer-name=''>SubList</a>
+			<a class='btn' href='twitch/authorize'>Autorização</a>
+		</div>
+	</div>
+{% endblock %}
+{% block js %}
+	{{parent()}}
+	<script src='assets/js/twitch.js'></script>
+{% endblock %}

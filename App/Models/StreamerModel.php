@@ -20,12 +20,12 @@ class StreamerModel extends Model
     {
         try {
             $streamerQuery = $this->query("select * from twitch_user where login = '$name'")->data[0];
-            if($streamerQuery){
-                $credentials = $this->getStreamerCredentials($streamerQuery->login,'channel:read:subscriptions');
+            if ($streamerQuery) {
+                $credentials = $this->getStreamerCredentials($streamerQuery->login, 'channel:read:subscriptions');
                 $streamer = new Streamer();
                 $streamer->setCredentials($credentials);
                 return $streamer;
-            }else{
+            } else {
                 return false;
             }
         } catch (Exception $e) {
@@ -66,7 +66,6 @@ class StreamerModel extends Model
                                 created_at='$created'
                                 where login='$user->login' ";
                 $this->query($sqlSalva);
-                pre($sqlSalva);
             } else {
                 $sqlSalva = "insert into twitch_user (
                     login,
@@ -87,8 +86,9 @@ class StreamerModel extends Model
 
                 $this->query($sqlSalva);
             }
-
-            $expireDate = $credentials->exp->format('Y-m-d H:i:s');
+            pre('Saving $credentials');
+            pre($credentials);
+            $expireDate = (!property_exists($credentials, 'exp') || is_null($credentials->exp)) ? null : $credentials->exp->format('Y-m-d H:i:s');
             foreach ($credentials->scope as $scope) {
                 $this->query("delete from twitch_authorization where login = '$credentials->login' and scope ='$scope'");
                 $insertAuthorization = "insert into twitch_authorization (" . //
@@ -113,6 +113,8 @@ class StreamerModel extends Model
                 '$expireDate'
                 )";
                 $this->query($insertAuthorization);
+                pre('$insertAuthorization');
+                pre($insertAuthorization);
             }
             return true;
         } catch (Exception $e) {
@@ -127,10 +129,18 @@ class StreamerModel extends Model
             'clientId' => $env->get('clientIdTwitch'),
             'clientSecret' => $env->get('clientSecretTwitch'),
         ]);
-        $subList = $twitch->getSubList($streamer->getCredentials());
+        $credentials = $streamer->getCredentials();
+        pre('$credentials');
+        pre($credentials);
+
+        $subList = $twitch->getSubList($credentials);
+        pre('$subList->refreshedCredential');
+        pre($subList->refreshedCredential);
         if ($subList && property_exists($subList, 'refreshedCredential')) {
-            $session = new Session();
-            $session->set('validAuth', $subList->refreshedCredential);
+            if (property_exists($subList->refreshedCredential, 'scope') && is_string($subList->refreshedCredential->scope)) {
+                $subList->refreshedCredential->scope = [$subList->refreshedCredential->scope];
+            }
+            $this->saveAuthorization($subList->refreshedCredential);
         }
         $newArray = [];
         if (property_exists($subList, 'data')) {

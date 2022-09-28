@@ -2,9 +2,11 @@ html {
     color: red;
 }
 
-body {
+.content-overlay {
+    margin: 0;
     overflow: hidden;
     background-color: black;
+    height: 100vh;
 }
 
 .container-main {

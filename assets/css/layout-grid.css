@@ -1,0 +1,24 @@
+body {
+    min-height: 100vh;
+    display: grid;
+    grid-template-rows: 120px auto 120px;
+    background-color: grey;
+}
+
+main .content-wrapper {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    background-color: var(--bs-light);
+    height: 100%;
+    width: 100%;
+}
+
+main {
+    padding-bottom: 25px;
+}
+
+.app-footer {
+    background-color: var(--header-footer-bgcolor);
+    min-height: 120px;
+}

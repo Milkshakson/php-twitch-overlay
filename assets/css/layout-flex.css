@@ -1,0 +1,43 @@
+:root {
+    --body-main-bgcolor: white;
+    --header-footer-bgcolor: #f6f9ff;
+}
+
+body {
+    min-height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.app-header {
+    /**/
+    display: flex;
+    transition: all 0.5s;
+    z-index: 997;
+    height: 60px;
+    box-shadow: 0px 2px 20px rgba(1, 41, 112, 0.1);
+    background-color: var(--header-footer-bgcolor);
+    padding-left: 20px;
+}
+
+main>.content-wrapper {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    width: 100%;
+    /* height: 100%;
+    position: absolute; */
+}
+
+main {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    flex-basis: 100%;
+}
+
+.app-footer {
+    display: flex;
+    background-color: var(--header-footer-bgcolor);
+    min-height: 120px;
+}

@@ -1,0 +1,12 @@
+.sb-sidenav-menu .nav-link i {
+    margin-right: 5px;
+}
+
+.alert-dismissible {
+    position: absolute !important;
+    margin: 0 !important;
+    top: 0 !important;
+    left: 0 !important;
+    z-index: 9999 !important;
+    width: 100% !important;
+}

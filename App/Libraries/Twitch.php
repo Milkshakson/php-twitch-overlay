@@ -18,9 +18,9 @@ class Twitch
     protected $botList = [
         'nightbot', 'timeoutwithbits', 'streamlabs',
         'streamholics', 'streamelements', 'soundalerts',
-        'bingcortana',
+        'bingcortana', 'AnotherTTVViewer',
         'own3d', 'kaxips06',
-        'blgdamjudge'
+        'blgdamjudge', 'CommanderRoot'
     ];
 
     protected $translatedmessages = [
@@ -113,6 +113,13 @@ class Twitch
                 "content" => $this->curl->__tostring()
             ];
             $content = json_decode($curlToken['content']);
+            $validate = $this->validateStringToken($content->access_token);
+            $now = new DateTime();
+            $expira = clone $now;
+            $expira->modify("+ $validate->expires_in seconds");
+            $content->login = $validate->login;
+            $content->exp = $expira;
+            pre('passou aqui');
             return $content;
         } catch (Exception $e) {
             return false;

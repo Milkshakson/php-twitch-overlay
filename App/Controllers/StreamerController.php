@@ -2,7 +2,6 @@
 
 namespace App\Controllers;
 
-use App\Entities\Streamer;
 use App\Libraries\Dotenv;
 use App\Libraries\Request;
 use App\Libraries\Session;
@@ -10,7 +9,7 @@ use App\Libraries\Twitch;
 use App\Models\StreamerModel;
 use Exception;
 
-class StreamerController
+class StreamerController extends BaseController
 {
     public function subList()
     {
@@ -29,9 +28,9 @@ class StreamerController
         $request = new Request();
         $streamerModel = new StreamerModel();
 
-        $streamerName = $request->find('streamer');
+        $streamerName = strtolower($request->find('streamer'));
         require_once('./App/views/includes/header.php');
-        $html = '';
+        $html = "<div class='content-overlay'>";
         $autorizados = [
             'rogercwb',
             'milkshakson',
@@ -41,11 +40,11 @@ class StreamerController
             'felipemojave'
         ];
         if (!in_array($streamerName, $autorizados)) {
-            exit("<h1 class='text-center text-danger'>Streamer $streamerName não consta na lista de autorizados.</h1>");
+            exit("<h1 class='text-center text-danger  content-overlay'>Streamer $streamerName não consta na lista de autorizados.</h1>");
         }
         $streamer = $streamerModel->findByName($streamerName);
         if (!$streamer) {
-            exit("<h1 class='text-center text-danger'>As credenciais para o streamer não estão corretas.</h1>");
+            exit("<div class='text-center text-danger content-overlay'>As credenciais para o streamer não estão corretas.</div>");
         }
         $subList = $streamerModel->getSubList($streamer);
         $layout = empty($_GET['layout']) ? 'h' : $_GET['layout'];
@@ -110,45 +109,9 @@ class StreamerController
         } catch (Exception $e) {
             $html .= "<h1 class='text-center text-danger'>Houve um erro ao listar os avatares.</h1>";
         }
-        $html .= reload(60000, false);
+        //  $html .= reload(60000, false);
         $html .= '</div></div>';
+        $html .= "</div>";
         return $html;
-    }
-
-    public function authorize()
-    {
-        $scope = urlencode('channel:read:subscriptions channel_subscriptions');
-        $twitch = new Twitch();
-        $uri_return = urlencode($twitch->getRedirectUri());
-        $env = new Dotenv();
-        $clientId = $env->get('clientIdTwitch');
-        $urlAuth =
-            "https://id.twitch.tv/oauth2/authorize?response_type=code&client_id=$clientId&redirect_uri=$uri_return&scope=$scope";
-        return ("<a href='$urlAuth' target='_blank'>$urlAuth</a>");
-    }
-
-    public function authorizeComplete()
-    {
-        include 'autoload.php';
-        $env = new Dotenv();
-        $session = new Session();
-        if (key_exists('code', $_GET)) {
-            $twitch = new Twitch([
-                'clientId' => $env->get('clientIdTwitch'),
-                'clientSecret' => $env->get('clientSecretTwitch'),
-            ]);
-            $code = $_GET['code'];
-            $credentials = $twitch->getAuthorizationCode($code);
-            if ($credentials && property_exists($credentials, 'userId')) {
-                $streamerModel = new StreamerModel();
-                if ($streamerModel->saveAuthorization($credentials)) {
-                    return '<h2>Credenciais salvas com sucesso.</h2>';
-                } else {
-                    return '<h2>Falha ao salvar as credenciais.</h2>';
-                }
-            } else {
-                return '<h2>Falha ao salvar as credenciais.</h2>';
-            }
-        }
     }
 }

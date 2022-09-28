@@ -1,0 +1,15 @@
+<div class="d-flex flex-column w-100 h-100 d-flex justify-content-center align-items-center p-5"
+    style="height:100% !important;">
+    <div class="container-grid-modulos">
+        {% for i in 0..10 %}
+        <div class="card">
+            <div class='card-header'>
+                {{i}}
+            </div>
+            <div class='card-body'>
+                {{random_string('alnum',rand(10,50))}}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
