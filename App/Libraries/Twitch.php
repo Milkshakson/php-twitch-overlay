@@ -19,7 +19,7 @@ class Twitch
         'nightbot', 'timeoutwithbits', 'streamlabs',
         'streamholics', 'streamelements', 'soundalerts',
         'bingcortana', 'AnotherTTVViewer',
-        'own3d', 'kaxips06',
+        'own3d', 'kaxips06', 'AlexisTheNexis', 'Anna_Banana_10', 'SophiaFox21',
         'blgdamjudge', 'CommanderRoot'
     ];
 
@@ -119,7 +119,6 @@ class Twitch
             $expira->modify("+ $validate->expires_in seconds");
             $content->login = $validate->login;
             $content->exp = $expira;
-            pre('passou aqui');
             return $content;
         } catch (Exception $e) {
             return false;
@@ -152,6 +151,7 @@ class Twitch
         $refreshed = $this->getRrefreshedToken($credentials->refresh_token);
         $credentials->access_token = $refreshed->access_token;
         $credentials->refresh_token = $refreshed->refresh_token;
+        $credentials->exp = $refreshed->exp;
         $return->refreshedCredential = $credentials;
         return $return;
     }
@@ -211,7 +211,7 @@ class Twitch
         }
     }
 
-    public function getChatters($streamerName = '', $noBots = true)
+    public function getChatters($streamerName = '')
     {
         $url = "https://tmi.twitch.tv/group/user/$streamerName/chatters";
         $users = file_get_contents($url);
@@ -219,19 +219,21 @@ class Twitch
         $chatters = $users->chatters;
         $viewers = [];
         foreach ($chatters->viewers as $chatter) {
-            if (!$noBots || !$this->isBot($chatter))
-                $viewers[] = ['nome' => $chatter, 'tipo' => 'viewers'];
+            $viewers[] = ['nome' => $chatter, 'tipo' => 'viewers', 'isBot' => $this->isBot($chatter)];
         }
         foreach ($chatters->moderators as $chatter) {
-            if (!$noBots || !$this->isBot($chatter))
-                $viewers[] = ['nome' => $chatter, 'tipo' => 'moderators'];
+            $viewers[] = ['nome' => $chatter, 'tipo' => 'moderators', 'isBot' => $this->isBot($chatter)];
         }
         return $viewers;
     }
 
-    private function isBot($viewer = '')
+    public function isBot($viewer = '')
     {
-        return in_array($viewer, $this->botList);
+
+        $list = array_map(function ($bot) {
+            return strtolower($bot);
+        }, $this->botList);
+        return in_array(strtolower($viewer), $list);
     }
 
     private function translateMessage($message = null)

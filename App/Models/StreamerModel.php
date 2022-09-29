@@ -86,8 +86,6 @@ class StreamerModel extends Model
 
                 $this->query($sqlSalva);
             }
-            pre('Saving $credentials');
-            pre($credentials);
             $expireDate = (!property_exists($credentials, 'exp') || is_null($credentials->exp)) ? null : $credentials->exp->format('Y-m-d H:i:s');
             foreach ($credentials->scope as $scope) {
                 $this->query("delete from twitch_authorization where login = '$credentials->login' and scope ='$scope'");
@@ -113,8 +111,6 @@ class StreamerModel extends Model
                 '$expireDate'
                 )";
                 $this->query($insertAuthorization);
-                pre('$insertAuthorization');
-                pre($insertAuthorization);
             }
             return true;
         } catch (Exception $e) {
@@ -130,12 +126,7 @@ class StreamerModel extends Model
             'clientSecret' => $env->get('clientSecretTwitch'),
         ]);
         $credentials = $streamer->getCredentials();
-        pre('$credentials');
-        pre($credentials);
-
         $subList = $twitch->getSubList($credentials);
-        pre('$subList->refreshedCredential');
-        pre($subList->refreshedCredential);
         if ($subList && property_exists($subList, 'refreshedCredential')) {
             if (property_exists($subList->refreshedCredential, 'scope') && is_string($subList->refreshedCredential->scope)) {
                 $subList->refreshedCredential->scope = [$subList->refreshedCredential->scope];

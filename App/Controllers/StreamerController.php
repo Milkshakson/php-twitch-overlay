@@ -59,39 +59,42 @@ class StreamerController extends BaseController
         $html .= "<div class='transparencia container-main'>";
         try {
             $session = new Session();
-            $storedTokenTwitch = $session->get('tokenTwitch');
             $twitch->getClientCredentials();
             $classRow = "col-lg-12 col-md-12";
             $classCard = "col-lg-1 col-md-1";
             $imgSize = " width='120px'";
-            $classTextViewerName = '';
             if ($layout == 'h') {
                 $classRow = "col-lg-12 col-md-12";
                 $classCard = "col-lg-1 col-md-1";
                 $imgSize = " width='120px'";
-                $classTextViewerName = 'text-horizontal';
             } elseif ($layout == 'v') {
                 $classRow = "col-lg-1 col-md-1";
                 $classCard = "col-lg-12 col-md-12";
                 $imgSize = " height='55px'";
-                $classTextViewerName = 'text-vertical';
             }
             $html .= "<div class='twitch-users row $classRow opacity-25 text-center'>";
-            shuffle($viewers);
-            $max = count($viewers) >= 10 ? 10 : count($viewers);
+
             $html .= "<div class='text-center $classCard'>";
             $html .= "<div class='text-center count-viewer-name text-success  col-lg-12 col-md-12'>Presentes</div>";
             $html .= "<div class='text-count-viewer'>" . count($viewers) . "</div>";
             $html .= "</div>";
             $usersToSearch = [];
+            $viewersNoBot = array_filter($viewers, function ($viewer) {
+                return !$viewer['isBot'];
+            });
+            $modList = array_column(array_filter($viewers, function ($viewer) {
+                return $viewer['tipo'] == 'moderators';
+            }), 'nome');
+            if (count($viewersNoBot) <= 10) {
+                $viewersNoBot = $viewers;
+            }
+            shuffle($viewersNoBot);
+            $max = count($viewersNoBot) >= 10 ? 10 : count($viewersNoBot);
             for ($i = 0; $i < $max; $i++) {
-                $usersToSearch[] = $viewers[$i]['nome'];
+                $usersToSearch[] = $viewersNoBot[$i]['nome'];
             }
             $avatares = $twitch->getUsersInfo($usersToSearch);
-            // $avatarUser = $twitch->getUsersInfo($nome);
-            // for ($i = 0; $i < $max; $i++) {
             foreach ($avatares as $viewer) {
-                // $viewer = $viewers[$i];
                 if (is_object($viewer)) {
                     $html .= "<div class='text-center $classCard'>";
                     $nome = $viewer->display_name;
@@ -100,7 +103,17 @@ class StreamerController extends BaseController
                     } else {
                         $classSub = '';
                     }
-                    $html .= "<div class='text-center text-viewer-name $classSub  col-lg-12 col-md-12'>$nome</div>";
+
+                    if (in_array($viewer->display_name, $modList)) {
+                        $nome = "<i class='ri-sword-fill text-success pe-1'></i>" . $nome;
+                    }
+                    if ($twitch->isBot($viewer->display_name)) {
+                        $nome = "<i class='bx bx-bot text-danger pe-1'></i>" . $nome;
+                    }
+
+
+
+                    $html .= "<div class='text-viewer-name $classSub w-100 d-flex flex-nowrap justify-content-center align-items-center'>$nome</div>";
                     $src = $viewer->profile_image_url;
                     $html .= "<img class='bg-info  $classSub rounded-circle' src='$src' $imgSize />";
                     $html .= "</div>";
@@ -109,7 +122,7 @@ class StreamerController extends BaseController
         } catch (Exception $e) {
             $html .= "<h1 class='text-center text-danger'>Houve um erro ao listar os avatares.</h1>";
         }
-        //  $html .= reload(60000, false);
+        $html .= reload(60000, false);
         $html .= '</div></div>';
         $html .= "</div>";
         return $html;
