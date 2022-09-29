@@ -1,4 +1,9 @@
 
+create database twitch_data;
+
+CREATE USER 'twitch_data'@'localhost' IDENTIFIED BY 'Cavalosdet3ta@milkshakson';
+GRANT ALL PRIVILEGES ON twitch_data.* TO 'twitch_data'@'localhost' WITH GRANT OPTION;
+FLUSH PRIVILEGES;
 create table twitch_user
 (
     login varchar(100) not null,
