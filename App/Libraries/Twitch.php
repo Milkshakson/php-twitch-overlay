@@ -33,8 +33,8 @@ class Twitch
         extract($params);
         if (isset($clientId)) $this->clientId = $clientId;
         if (isset($clientSecret)) $this->clientSecret = $clientSecret;
-
-        $this->redirectUri = ENVIRONMENT == 'production' ? '' : 'http://localhost:8000/twitch/authorize-complete';
+        $dotenv = new Dotenv();
+        $this->redirectUri = $dotenv->get('uriRedirectTwitch');
         $this->curl = new Curl();
     }
     public function getClientCredentials()
