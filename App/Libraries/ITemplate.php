@@ -2,7 +2,7 @@
 
 namespace App\Libraries;
 
-interface iTemplate
+interface ITemplate
 {
     public function display($view, $data);
     public function render($view, $data);

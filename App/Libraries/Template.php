@@ -3,9 +3,9 @@
 namespace App\Libraries;
 
 use ReflectionFunction;
-use App\Libraries\iTemplate;
+use App\Libraries\ITemplate;
 
-class Template implements iTemplate
+class Template implements ITemplate
 {
     private $twig;
 
