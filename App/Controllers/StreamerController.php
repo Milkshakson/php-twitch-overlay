@@ -29,7 +29,7 @@ class StreamerController extends BaseController
         $streamerModel = new StreamerModel();
 
         $streamerName = strtolower($request->find('streamer'));
-        require_once('./App/views/includes/header.php');
+        require_once(APPPATH . 'views/includes/header.php');
         $html = "<div class='content-overlay'>";
         $autorizados = [
             'rogercwb',
