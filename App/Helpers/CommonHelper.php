@@ -27,15 +27,6 @@ function reload($timer = null, $echo = true)
         return
             $return;
 }
-function pre($var, $exit = false)
-{
-    echo '<pre>';
-    print_r($var);
-    echo '</pre>';
-    if ($exit)
-        exit;
-}
-
 
 if (!function_exists('str_starts_with')) {
     function str_starts_with($str, $start)

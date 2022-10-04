@@ -5,7 +5,7 @@ spl_autoload_register(
         $caminhoCompleto =  $nomeCompletoDaClasse;
         $caminhoArquivo = str_replace('\\', DIRECTORY_SEPARATOR, $caminhoCompleto);
         $caminhoArquivo .= '.php';
-        //   pre($caminhoArquivo, 1);
+        pre($caminhoArquivo);
         if (file_exists($caminhoArquivo)) {
             require_once($caminhoArquivo);
         }
