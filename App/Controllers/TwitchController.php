@@ -48,7 +48,6 @@ class TwitchController  extends BaseController
                 return '<h2>Código não autorizado.</h2>';
             }
         } catch (Exception $e) {
-            pre($e);
             return '<h2>Falha ao salvar as credenciais.</h2>' . '<pre>' . json_encode($e) . '</pre>';
         }
     }
